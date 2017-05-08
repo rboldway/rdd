@@ -32,8 +32,12 @@ Gem::Specification.new do |spec|
 
   spec.add_development_dependency "bundler", "~> 1.14"
   spec.add_development_dependency "rake", "~> 10.0"
-  spec.add_development_dependency "byebug"
+  spec.add_development_dependency "byebug", "~> 9.0"
+
+  spec.add_development_dependency "rspec", "~>3.5"
+  spec.add_development_dependency "simplecov", "~>0.14"
 
   # TODO: Could not use yajl since it's parser would not resolve
   spec.add_runtime_dependency "oj", "~> 3.0"
+
 end
