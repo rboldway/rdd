@@ -1,9 +1,6 @@
 require "rdd/version"
 require 'rdd/events'
-
-require 'optparse'
-require 'optparse/time'
-require 'ostruct'
+require 'rdd/time_range'
 
 require 'open-uri'
 require 'zlib'
@@ -13,83 +10,23 @@ require 'byebug'
 
 module Rdd
 
-  def self.validate
-
-=begin
-  rdd [--after DATETIME] [--before DATETIME] [--top COUNT]
-
-  rdd --after 2015-03-18T13:00:00Z
-  rdd --after 2015-08-05T15:10:02-00:00
-  rdd --after 2015-03-16
-  rdd --top 500
-  rdd --after 2015-01-01 --before 2015-01-08
-
-  Options:
-    [--after=AFTER]    # Date to start search at, ISO8601 or YYYY-MM-DD format
-  # Default: 28 days ago
-  [--before=BEFORE]  # ISO8601 Date to end search at, ISO8601 or YYYY-MM-DD format
-  # Default: Now
-  [--top=N]          # The number of repos to show
-  # Default: 20
-=end
-
-    options = OpenStruct.new
-
-    OptionParser.new do |opts|
-
-      # Defaults
-      options.before = Time.now
-      options.after = options.before - (60 * 60 * 24 * 28)
-      options.count = 20
-
-      opts.banner = "Usage: #{File.basename($0,'.*')} [--after DATE] [--before DATE] [--top COUNT]"
-
-      # Cast 'after' argument to a Time object.
-      opts.on("--after [AFTER]", Time, "Start search") do |after|
-        options.after = after
-      end
-
-      # Cast 'before' argument to a Time object.
-      opts.on("--before [BEFORE]", Time, "End search") do |before|
-        options.before = before
-      end
-
-      # Cast 'top' argument to a Integer object.
-      opts.on("--top [COUNT]", Integer, "The number of repos to show") do |count|
-        options.count = count
-      end
-
-      # No argument, shows at tail.  This will print an options summary.
-      opts.on_tail("-h", "--help", "Show this message") do
-        puts opts
-        exit
-      end
-
-      if ARGV.empty?
-        puts opts
-        exit
-      end
-
-    end.parse!
-
-  end
-
-  def date_verify
-    # parse date
-    # validate date
-    # determine archive
-    # return archivegit
-  end
-
   class << self
 
     public
 
-    def search_archive(url)
+    def search_archive_over_time(after: Time.now, before: (Time.now-(60*60*24*28)), top: 20)
+      time_segment = TimeRange.new(after,before).composite
+      search_archive(url_base(time_segment), top)
+    end
+
+    private
+
+    def search_archive(url, top)
       events = (Rdd.private_methods - Object.private_methods).map(&:to_s)
       repositories = {}
       # start_time = Time.now
-      open(url) do |gz|
+      uri = URI.parse(url)
+      uri.open do |gz|
         Zlib::GzipReader.new(gz).each_line do |line|
           begin
             event = Oj.load(line)
@@ -112,19 +49,21 @@ module Rdd
       end
       # puts Time.now - start_time
 
-      # sort descending into nested array
+      # sort descending into array
       repositories = repositories.sort_by {|_,value| -value[:count]}
-
       top = 12
       # guard top and truncate repositories if top is present
       if (top ||= nil)
         top = [top, repositories.size].min
         repositories = repositories[0..top-1]
       end
-
       repositories.each_with_index do |entry, i|
         puts "##{i+1}. #{entry[1][:name]} - #{entry[1][:count]} points"
       end
+    end
+
+    def url_base(time_segment)
+      "http://data.githubarchive.org/#{time_segment}.json.gz"
     end
 
   end
