@@ -51,7 +51,7 @@ module Rdd
 
       # sort descending into array
       repositories = repositories.sort_by {|_,value| -value[:count]}
-      top = 12
+
       # guard top and truncate repositories if top is present
       if (top ||= nil)
         top = [top, repositories.size].min
