@@ -19,14 +19,13 @@ module Rdd
       search_archive(url_base(time_segment), top)
     end
 
-    private
+    # private
 
     def search_archive(url, top)
       events = (Rdd.private_methods - Object.private_methods).map(&:to_s)
       repositories = {}
       # start_time = Time.now
-      uri = URI.parse(url)
-      uri.open do |gz|
+      open(url) do |gz|
         Zlib::GzipReader.new(gz).each_line do |line|
           begin
             event = Oj.load(line)
@@ -52,15 +51,12 @@ module Rdd
       # sort descending into array
       repositories = repositories.sort_by {|_,value| -value[:count]}
 
-      # guard top and truncate repositories if top is present
-      if (top ||= nil)
-        top = [top, repositories.size].min
-        repositories = repositories[0..top-1]
-      end
-      repositories.each_with_index do |entry, i|
-        puts "##{i+1}. #{entry[1][:name]} - #{entry[1][:count]} points"
-      end
-    end
+     [top, repositories.size].min.times do |i|
+       entry = repositories.shift
+       puts "##{i+1}. #{entry[1][:name]} - #{entry[1][:count]} points"
+     end
+
+  end
 
     def url_base(time_segment)
       "http://data.githubarchive.org/#{time_segment}.json.gz"
@@ -69,3 +65,4 @@ module Rdd
   end
 
 end
+
