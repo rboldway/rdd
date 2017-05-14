@@ -2,6 +2,7 @@ require 'spec_helper'
 
 describe Rdd do
 
+  # EXAMPLES
   # Activity for 1/1/2015 @ 3PM UTC   2015-01-01-15
   # Activity for 1/1/2015             2015-01-01-{0..23}
   # Activity for all of January 2015  2015-01-{01..30}-{0..23}
@@ -50,6 +51,36 @@ describe Rdd do
     expect{Rdd::search_archive_over_time(after: after, before: before, top: top)}.to output(/points/).to_stdout
   end
 
+  it 'normalize day with 1,2' do
+    expect(Rdd.normalize_day(1,2)).to eq [1,2]
+  end
+
+  it 'normalize day with 7,nil' do
+    expect(Rdd.normalize_day(7,nil)).to eq [7,7]
+  end
+
+  it 'normalize day with nil,7 which raises error' do
+    expect{Rdd.normalize_day(nil,7)}.to raise_error RuntimeError, "missing after_day"
+  end
+
+  it 'normalize hour with 1,2' do
+    expect(Rdd.normalize_hour(1,2)).to eq [1,2]
+  end
+
+  it 'normalize hour with 7,nil' do
+    expect(Rdd.normalize_hour(7,nil)).to eq [7,7]
+  end
+
+  it 'normalize hour with nil,7 which raises error' do
+    expect{Rdd.normalize_hour(nil,7)}.to raise_error RuntimeError, "missing after_hour"
+  end
+
+  it 'creates an array of 4 urls' do
+    url = "http://data.githubarchive.org/2015-01-{01..02}-{0..1}.json.gz"
+    array = Rdd.unpack_uri(url)
+    expect(array.size).to eq 4
+    expect(array.first).to eq "http://data.githubarchive.org/2015-01-01-0.json.gz"
+  end
 
 end
 
